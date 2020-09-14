@@ -1,0 +1,13 @@
+[package]
+name = "text_placeholder"
+description = "A flexible text template engine"
+version = "0.1.0"
+authors = ["Bernardo Araujo <bernardo.amc@gmail.com>"]
+edition = "2018"
+repository = "https://github.com/bernardoamc/text-placeholder"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
