@@ -3,8 +3,11 @@
 //! ## Overview
 //! Create templates with named placeholders within it.
 //!
-//! Placeholders are defined by default following the handlebars syntax, but can be overriden
-//! with specific boundaries.
+//! Placeholders are defined by default following the handlebars syntax,
+//! but can be overriden with specific boundaries.
+//!
+//! This library supports passing a `HashMap` or `Struct` as a context
+//! in order to replace the specified placeholders.
 //!
 //! ## Example
 //!
@@ -58,7 +61,9 @@ impl<'t> Template<'t> {
     }
 
     /// Generates a Template with boundaries specified by the `start` and `end`
-    /// arguments
+    /// arguments. Example:
+    ///
+    /// Template::new_with_placeholder("Hello [key]!", "[", "]");
     pub fn new_with_placeholder(text: &'t str, start: &'t str, end: &'t str) -> Self {
         Self {
             tokens: Parser::new(text, start, end).parse(),
