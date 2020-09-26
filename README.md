@@ -79,7 +79,3 @@ let custom_template = Template::new_with_placeholder("Hello $[first]] $[second]!
 
 assert_eq!(default_template.fill_with_struct(&context), "Hello text placeholder!");
 ```
-
-## Roadmap
-
-- Allow objects that implement trait `std::ops::Index` instead of depending directly on a HashMap.
