@@ -2,24 +2,33 @@
 
 A flexible text template engine that allows templates with named placeholders within it.
 
+```rust
+let template = Template::new("Hello {{first}} {{second}}!");
+```
+
 Placeholders are defined by default following the handlebars syntax, but can be overriden
 with specific boundaries.
+
+```rust
+let template = Template::new_with_placeholder("Hello $[first]] $[second]!", "$[", "]");
+```
 
 In order to provide the context in which our placeholders will be replaced the following
 options are available:
 
-- HashMap
-- Struct as an optional feature.
+- HashMap.
+- Struct, as an **optional** feature.
 
 ## HashMap
 
-As the name implies we can pass a `HashMap` in order to provide the context. The
-methods available are:
+The following methods are available with a `HashMap`:
 
-- `fill_with_hashmap` which replaces empty placeholders with an empty string.
+- `fill_with_hashmap`
+  - replaces missing placeholders with an empty string.
+  - replaces placeholders that cannot be converted to a strint with an empty string.
 - `fill_with_hashmap_strict` which returns a `Error::PlaceholderError` when:
-  - the provided context does not contain the placeholder
-  - the provided value for a placeholder cannot be converted to a string
+  - a placeholder is missing.
+  - a placeholder value cannot be converted to a string.
 
 ### Example
 
@@ -44,18 +53,23 @@ assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!"
 
 ## Struct
 
-This is an optional feature that depends on `serde`. In order to enable it specify in your `Cargo.toml` dependencies the following:
+Allow structs that implement the `serde::Serialize` trait to be used as context.
+
+This is an optional feature that depends on `serde`. In order to enable it add the following to your `Cargo.toml` file:
 
 ```toml
-text_placeholder = { version = "0.2", features = ["struct_context"] }
+[dependencies]
+text_placeholder = { version = "0.3", features = ["struct_context"] }
 ```
 
-As the name implies we can pass a `Struct` in order that implements the `serde::Serialize` trait in order to provide the context. The methods available are:
+The methods available are:
 
-- `fill_with_struct` which replaces empty placeholders with an empty string.
+- `fill_with_struct`
+  - replaces missing placeholders with an empty string.
+  - replaces placeholders that cannot be converted to a strint with an empty string.
 - `fill_with_struct_strict` which returns a `Error::PlaceholderError` when:
-  - the provided context does not contain the placeholder
-  - the provided value for a placeholder cannot be converted to a string
+  - a placeholder is missing.
+  - a placeholder value cannot be converted to a string.
 
 ### Example
 
