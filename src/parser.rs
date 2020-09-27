@@ -59,7 +59,11 @@ impl<'t> Parser<'t> {
         self.state = State::Text;
 
         if let Some(placeholder_index) = self.text.find(self.end) {
-            token = Token::Placeholder(&self.text[self.start.len()..placeholder_index]);
+            token = Token::Placeholder(
+                &self.text[self.start.len()..placeholder_index]
+                    .trim_start_matches(" ")
+                    .trim_end_matches(" "),
+            );
             let new_position = placeholder_index + self.end.len();
             self.text = &self.text[new_position..];
         } else {
@@ -248,6 +252,33 @@ mod tests {
                 Token::Text(" "),
                 Token::Text("{{placeholder")
             ]
+        );
+    }
+
+    #[test]
+    fn test_trim_placeholdler_prefix_space() {
+        let tokens = Parser::new("text [ placeholder]", "[", "]").parse();
+        assert_eq!(
+            tokens,
+            vec![Token::Text("text "), Token::Placeholder("placeholder")]
+        );
+    }
+
+    #[test]
+    fn test_trim_placeholdler_suffix_space() {
+        let tokens = Parser::new("text [placeholder ]", "[", "]").parse();
+        assert_eq!(
+            tokens,
+            vec![Token::Text("text "), Token::Placeholder("placeholder")]
+        );
+    }
+
+    #[test]
+    fn test_trim_placeholdler_presuffix_space() {
+        let tokens = Parser::new("text [ placeholder ]", "[", "]").parse();
+        assert_eq!(
+            tokens,
+            vec![Token::Text("text "), Token::Placeholder("placeholder")]
         );
     }
 }
