@@ -1,4 +1,4 @@
-//! # A flexible text template engine
+//! # A minimal text template engine
 //!
 //! ## Overview
 //! Create templates with named placeholders within it.
