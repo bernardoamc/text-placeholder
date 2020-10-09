@@ -28,8 +28,8 @@
 //!
 //!     assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!");
 
-mod parser;
-use parser::{Parser, Token};
+mod token_iterator;
+use token_iterator::{Token, TokenIterator};
 
 mod error;
 use error::{Error, Result};
@@ -56,7 +56,8 @@ impl<'t> Template<'t> {
     /// as a named placeholder.
     pub fn new(text: &'t str) -> Self {
         Self {
-            tokens: Parser::new(text, DEFAULT_START_PLACEHOLDER, DEFAULT_END_PLACEHOLDER).parse(),
+            tokens: TokenIterator::new(text, DEFAULT_START_PLACEHOLDER, DEFAULT_END_PLACEHOLDER)
+                .collect(),
         }
     }
 
@@ -66,7 +67,7 @@ impl<'t> Template<'t> {
     /// Template::new_with_placeholder("Hello [key]!", "[", "]");
     pub fn new_with_placeholder(text: &'t str, start: &'t str, end: &'t str) -> Self {
         Self {
-            tokens: Parser::new(text, start, end).parse(),
+            tokens: TokenIterator::new(text, start, end).collect(),
         }
     }
 

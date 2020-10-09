@@ -9,14 +9,14 @@ pub enum Token<'t> {
     Placeholder(&'t str),
 }
 
-pub struct Parser<'t> {
+pub struct TokenIterator<'t> {
     text: &'t str,
     state: State,
     start: &'t str,
     end: &'t str,
 }
 
-impl<'t> Parser<'t> {
+impl<'t> TokenIterator<'t> {
     pub fn new(text: &'t str, start: &'t str, end: &'t str) -> Self {
         Self {
             text,
@@ -24,19 +24,6 @@ impl<'t> Parser<'t> {
             end,
             state: State::Text,
         }
-    }
-
-    pub fn parse(&mut self) -> Vec<Token<'t>> {
-        let mut tokens: Vec<Token> = Vec::new();
-
-        while self.text.len() > 0 {
-            match self.state {
-                State::Text => tokens.push(self.parse_text()),
-                State::Placeholder => tokens.push(self.parse_placeholder()),
-            }
-        }
-
-        tokens
     }
 
     fn parse_text(&mut self) -> Token<'t> {
@@ -75,19 +62,34 @@ impl<'t> Parser<'t> {
     }
 }
 
+impl<'t> Iterator for TokenIterator<'t> {
+    type Item = Token<'t>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.text.len() == 0 {
+            return None;
+        }
+
+        match self.state {
+            State::Text => Some(self.parse_text()),
+            State::Placeholder => Some(self.parse_placeholder()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Parser, Token};
+    use super::{Token, TokenIterator};
 
     #[test]
     fn test_no_boundaries_present() {
-        let tokens = Parser::new("hello world", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("hello world", "[", "]").collect();
         assert_eq!(tokens, vec![Token::Text("hello world")]);
     }
 
     #[test]
     fn test_boundary_begging_of_line() {
-        let tokens = Parser::new("[placeholder] text", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("[placeholder] text", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![
@@ -100,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_boundary_middle_of_line() {
-        let tokens = Parser::new("text [placeholder] text", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [placeholder] text", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![
@@ -113,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_boundary_end_of_line() {
-        let tokens = Parser::new("text [placeholder]", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [placeholder]", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Placeholder("placeholder")]
@@ -122,12 +124,12 @@ mod tests {
 
     #[test]
     fn test_boundary_multiple_boundaries() {
-        let tokens = Parser::new(
+        let tokens: Vec<Token> = TokenIterator::new(
             "[placeholder] text [placeholder] test [placeholder]",
             "[",
             "]",
         )
-        .parse();
+        .collect();
         assert_eq!(
             tokens,
             vec![
@@ -143,13 +145,13 @@ mod tests {
 
     #[test]
     fn test_missing_boundary_start() {
-        let tokens = Parser::new("text placeholder]", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text placeholder]", "[", "]").collect();
         assert_eq!(tokens, vec![Token::Text("text placeholder]")]);
     }
 
     #[test]
     fn test_missing_boundary_end() {
-        let tokens = Parser::new("text [placeholder", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [placeholder", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Text("[placeholder")]
@@ -158,7 +160,8 @@ mod tests {
 
     #[test]
     fn test_boundary_and_missing_boundaries() {
-        let tokens = Parser::new("text [placeholder] [placeholder", "[", "]").parse();
+        let tokens: Vec<Token> =
+            TokenIterator::new("text [placeholder] [placeholder", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![
@@ -172,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_boundary_start_of_line() {
-        let tokens = Parser::new("{{placeholder}} text", "{{", "}}").parse();
+        let tokens: Vec<Token> = TokenIterator::new("{{placeholder}} text", "{{", "}}").collect();
         assert_eq!(
             tokens,
             vec![
@@ -185,7 +188,8 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_boundary_middle_of_line() {
-        let tokens = Parser::new("text {{placeholder}} text", "{{", "}}").parse();
+        let tokens: Vec<Token> =
+            TokenIterator::new("text {{placeholder}} text", "{{", "}}").collect();
         assert_eq!(
             tokens,
             vec![
@@ -198,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_boundary_end_of_line() {
-        let tokens = Parser::new("text {{placeholder}}", "{{", "}}").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text {{placeholder}}", "{{", "}}").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Placeholder("placeholder")]
@@ -207,12 +211,12 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_boundary_multiple_boundaries() {
-        let tokens = Parser::new(
+        let tokens: Vec<Token> = TokenIterator::new(
             "{{placeholder}} text {{placeholder}} test {{placeholder}}",
             "{{",
             "}}",
         )
-        .parse();
+        .collect();
         assert_eq!(
             tokens,
             vec![
@@ -228,13 +232,13 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_missing_boundary_start() {
-        let tokens = Parser::new("text placeholder}}", "{{", "}}").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text placeholder}}", "{{", "}}").collect();
         assert_eq!(tokens, vec![Token::Text("text placeholder}}")]);
     }
 
     #[test]
     fn test_multiple_chars_missing_boundary_end() {
-        let tokens = Parser::new("text {{placeholder", "{{", "}}").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text {{placeholder", "{{", "}}").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Text("{{placeholder")]
@@ -243,7 +247,8 @@ mod tests {
 
     #[test]
     fn test_multiple_chars_boundary_and_missing_boundaries() {
-        let tokens = Parser::new("text {{placeholder}} {{placeholder", "{{", "}}").parse();
+        let tokens: Vec<Token> =
+            TokenIterator::new("text {{placeholder}} {{placeholder", "{{", "}}").collect();
         assert_eq!(
             tokens,
             vec![
@@ -257,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_trim_placeholdler_prefix_space() {
-        let tokens = Parser::new("text [ placeholder]", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [ placeholder]", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Placeholder("placeholder")]
@@ -266,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_trim_placeholdler_suffix_space() {
-        let tokens = Parser::new("text [placeholder ]", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [placeholder ]", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Placeholder("placeholder")]
@@ -275,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_trim_placeholdler_presuffix_space() {
-        let tokens = Parser::new("text [ placeholder ]", "[", "]").parse();
+        let tokens: Vec<Token> = TokenIterator::new("text [ placeholder ]", "[", "]").collect();
         assert_eq!(
             tokens,
             vec![Token::Text("text "), Token::Placeholder("placeholder")]

@@ -20,7 +20,7 @@ let template = Template::new("Hello {{first}} {{second}}!");
 Templates use the handlebars syntax as boundaries by default, but can be overridden:
 
 ```rust
-let template = Template::new_with_placeholder("Hello $[first]] $[second]!", "$[", "]");
+let template = Template::new_with_placeholder("Hello $[first] $[second]!", "$[", "]");
 ```
 
 ## Context
@@ -75,7 +75,7 @@ This is an optional feature that depends on `serde`. In order to enable it add t
 
 ```toml
 [dependencies]
-text_placeholder = { version = "0.3.1", features = ["struct_context"] }
+text_placeholder = { version = "0.4", features = ["struct_context"] }
 ```
 
 Each placeholder should be a `field` in your `struct` with an associated `value` that can be converted into a `str`.
