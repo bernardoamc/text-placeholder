@@ -45,4 +45,12 @@ impl StdError for Error {
             Error::SerdeError(_) => "SerdeError",
         }
     }
+
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            Error::PlaceholderError(_) => None,
+            #[cfg(feature = "struct_context")]
+            Error::SerdeError(ref e) => Some(e),
+        }
+    }
 }

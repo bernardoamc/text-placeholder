@@ -32,7 +32,7 @@ mod token_iterator;
 use token_iterator::{Token, TokenIterator};
 
 mod error;
-use error::{Error, Result};
+pub use error::{Error, Result};
 
 #[cfg(feature = "struct_context")]
 extern crate serde_json;
