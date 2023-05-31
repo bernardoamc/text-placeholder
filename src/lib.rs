@@ -28,6 +28,8 @@
 //!
 //!     assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!");
 
+use std::borrow::Cow;
+
 mod token_iterator;
 use token_iterator::{Token, TokenIterator};
 
@@ -71,27 +73,16 @@ impl<'t> Template<'t> {
         }
     }
 
-    /// Fill the template's placeholders using the provided `replacements HashMap`
-    /// in order to to infer values for the named placeholders.
+    /// Fill the template's placeholders using the provided `replacements` HashMap
+    /// in order to to derive values for the named placeholders.
     ///
     /// Placeholders without an associated value will be replaced with an empty string.
     ///
     /// For a version that generates an error in case a placeholder is missing see
     /// `fill_with_hashmap_strict`.
     pub fn fill_with_hashmap(&self, replacements: &HashMap<&str, &str>) -> String {
-        let mut result = String::new();
-
-        for segment in &self.tokens {
-            match segment {
-                Token::Text(s) => result.push_str(s),
-                Token::Placeholder(s) => match replacements.get(s) {
-                    Some(value) => result.push_str(value),
-                    _ => {}
-                },
-            }
-        }
-
-        result
+        self.fill_with_function(|s| Some(Cow::Borrowed(replacements.get(s).unwrap_or(&""))))
+            .unwrap()
     }
 
     /// Fill the template's placeholders using the provided `replacements HashMap`
@@ -102,13 +93,25 @@ impl<'t> Template<'t> {
     /// For a version that does not generate an error in case a placeholder is missing see
     /// `fill_with_hashmap`.
     pub fn fill_with_hashmap_strict(&self, replacements: &HashMap<&str, &str>) -> Result<String> {
+        self.fill_with_function(|s| replacements.get(s).map(|s| Cow::from(*s)))
+    }
+
+    /// Fill the template's placeholders using the provided `replacements` function
+    /// in order to to derive values for the named placeholders.
+    ///
+    /// Placeholders without an associated value (the function returns `None`)
+    /// will result in a `Error::PlaceholderError`.
+    pub fn fill_with_function<'a, F>(&self, mut replacements: F) -> Result<String>
+    where
+        F: FnMut(&'t str) -> Option<Cow<'a, str>> + 'a,
+    {
         let mut result = String::new();
 
         for segment in &self.tokens {
             match segment {
                 Token::Text(s) => result.push_str(s),
-                Token::Placeholder(s) => match replacements.get(s) {
-                    Some(value) => result.push_str(value),
+                Token::Placeholder(s) => match replacements(s) {
+                    Some(value) => result.push_str(&*value),
                     None => {
                         let message = format!("missing value for placeholder named '{}'.", s);
                         return Err(Error::PlaceholderError(message));
@@ -137,17 +140,7 @@ impl<'t> Template<'t> {
         let mut result = String::new();
         let replacements = serde_json::to_value(replacements)?;
 
-        for segment in &self.tokens {
-            match segment {
-                Token::Text(s) => result.push_str(s),
-                Token::Placeholder(s) => match replacements.get(s) {
-                    Some(value) => result.push_str(value.as_str().unwrap_or("")),
-                    _ => {}
-                },
-            }
-        }
-
-        Ok(result)
+        self.fill_with_function(|s| Some(Cow::Borrowed(replacements.get(s).unwrap_or("")))).unwrap()
     }
 
     #[cfg(feature = "struct_context")]
@@ -167,32 +160,14 @@ impl<'t> Template<'t> {
         let mut result = String::new();
         let replacements = serde_json::to_value(replacements)?;
 
-        for segment in &self.tokens {
-            match segment {
-                Token::Text(s) => result.push_str(s),
-                Token::Placeholder(s) => match replacements.get(s) {
-                    Some(value) => match value.as_str() {
-                        Some(value) => result.push_str(value),
-                        None => {
-                            let message = format!("missing value for placeholder named '{}'.", s);
-                            return Err(Error::PlaceholderError(message));
-                        }
-                    },
-                    None => {
-                        let message = format!("missing value for placeholder named '{}'.", s);
-                        return Err(Error::PlaceholderError(message));
-                    }
-                },
-            }
-        }
-
-        Ok(result)
+        self.fill_with_function(|s| replacements.get(s).map(|v| Cow::Borrowed(v)))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Template;
+    use std::borrow::Cow;
     use std::collections::HashMap;
 
     #[cfg(feature = "struct_context")]
@@ -393,6 +368,27 @@ mod tests {
             Template::new("hello {{placeholder}}").fill_with_hashmap_strict(&table).map_err(|e| e.to_string()),
             Err("Error while replacing placeholder. Reason: missing value for placeholder named 'placeholder'.".to_owned())
         );
+    }
+
+    // ----------------------
+    // | fill_with_function |
+    // ----------------------
+
+    #[test]
+    fn test_function_replacements() {
+        let template = Template::new("hello {{foo}} {{bar}}");
+
+        let mut kw = Vec::new();
+        let mut idx = 0;
+
+        let result = template.fill_with_function(|s| {
+            kw.push(s);
+            idx += 1;
+            Some(Cow::Owned(format!("{s}{idx}")))
+        }).expect("fill_with_function failed");
+
+        assert_eq!(result, "hello foo1 bar2");
+        assert_eq!(kw, vec!["foo", "bar"]);
     }
 
     // --------------------
