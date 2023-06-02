@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! # A minimal text template engine
 //!
 //! ## Overview
@@ -12,7 +13,11 @@
 //! ## Example
 //!
 //!     use text_placeholder::Template;
+//!     #[cfg(feature = "std")]
 //!     use std::collections::HashMap;
+//!
+//!     #[cfg(not(feature = "std"))]
+//!     use hashbrown::HashMap;
 //!
 //!     let default_template = Template::new("Hello {{first}} {{second}}!");
 //!
@@ -39,7 +44,16 @@ extern crate serde_json;
 #[cfg(feature = "struct_context")]
 use serde::Serialize;
 
+#[cfg(feature = "std")]
 use std::collections::HashMap;
+
+#[cfg(not(feature = "std"))]
+use hashbrown::HashMap;
+
+#[macro_use]
+extern crate alloc;
+
+use alloc::{string::String, vec::Vec};
 
 const DEFAULT_START_PLACEHOLDER: &str = "{{";
 const DEFAULT_END_PLACEHOLDER: &str = "}}";
@@ -193,7 +207,14 @@ impl<'t> Template<'t> {
 #[cfg(test)]
 mod tests {
     use super::Template;
+
+    use crate::alloc::{borrow::ToOwned, string::ToString};
+
+    #[cfg(feature = "std")]
     use std::collections::HashMap;
+
+    #[cfg(not(feature = "std"))]
+    use hashbrown::HashMap;
 
     #[cfg(feature = "struct_context")]
     use serde::Serialize;

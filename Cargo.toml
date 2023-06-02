@@ -9,9 +9,12 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [features]
+default = ["std"]
+std = []
 # Optional dependency in order to use structs for context instead of a HashMap.
-struct_context = ["serde", "serde_json"]
+struct_context = ["std", "serde", "serde_json"]
 
 [dependencies]
+hashbrown = { version = "0.13.2"} # Used when std feature is not enabled
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_json = { version = "1.0", optional = true }

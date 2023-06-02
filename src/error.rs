@@ -1,11 +1,13 @@
-use std::fmt;
+use alloc::string::String;
+use core::fmt;
 
+#[cfg(feature = "std")]
 use std::error::Error as StdError;
 
 #[cfg(feature = "struct_context")]
 use serde_json::Error as SerdeJsonError;
 
-pub type Result<T> = ::std::result::Result<T, Error>;
+pub type Result<T> = ::core::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
@@ -37,6 +39,10 @@ impl fmt::Display for Error {
     }
 }
 
+// Only available when the standard library is available
+// Enable for no_std when Error trait is stabilized for no_std
+// See: https://github.com/rust-lang/rust/issues/103765
+#[cfg(feature = "std")]
 impl StdError for Error {
     fn description(&self) -> &str {
         match self {

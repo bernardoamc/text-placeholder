@@ -80,6 +80,8 @@ impl<'t> Iterator for TokenIterator<'t> {
 #[cfg(test)]
 mod tests {
     use super::{Token, TokenIterator};
+    extern crate alloc;
+    use alloc::vec::Vec;
 
     #[test]
     fn test_no_boundaries_present() {
