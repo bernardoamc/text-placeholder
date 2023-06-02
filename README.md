@@ -1,11 +1,20 @@
 # Text Placeholder
 
-A minimal text template engine that allows named placeholders within your templates.
+Text Placeholder is a minimalistic text template engine designed for the manipulation of named
+placeholders within textual templates.
 
-There are two necessary pieces in order to parse a template:
+This library operates based on two primary elements:
 
-- Placeholders
-- Context
+- **Placeholders**: Defined markers within the text templates intended to be replaced by actual
+  content in the final rendition.
+
+- **Context**: The precise data set used for the replacement of placeholders during the template
+  rendering process.
+
+For use within a [`no_std` environment](https://docs.rust-embedded.org/book/intro/no-std.html), Text
+Placeholder can be configured by disabling
+[the default features](https://doc.rust-lang.org/cargo/reference/features.html#the-default-feature).
+This allows the library to maintain compatibility with `no_std` specifications.
 
 ## Placeholders
 
@@ -50,7 +59,7 @@ The following methods are available with a `HashMap`:
 
 ```rust
 use text_placeholder::Template;
-use std::collections::HashMap;
+use std::collections::HashMap; // or for no_std `use hashbrown::HashMap;`
 
 let default_template = Template::new("Hello {{first}} {{second}}!");
 
@@ -71,14 +80,16 @@ assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!"
 
 Allow structs that implement the `serde::Serialize` trait to be used as context.
 
-This is an optional feature that depends on `serde`. In order to enable it add the following to your `Cargo.toml` file:
+This is an optional feature that depends on `serde`. In order to enable it add the following to your
+`Cargo.toml` file:
 
 ```toml
 [dependencies]
 text_placeholder = { version = "0.4", features = ["struct_context"] }
 ```
 
-Each placeholder should be a `field` in your `struct` with an associated `value` that can be converted into a `str`.
+Each placeholder should be a `field` in your `struct` with an associated `value` that can be
+converted into a `str`.
 
 The following methods are available with a `struct`:
 
