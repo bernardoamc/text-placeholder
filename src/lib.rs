@@ -56,6 +56,12 @@ impl<'t> Template<'t> {
     /// Generates a Template with boundaries specified by the handlebars syntax,
     /// this means that within the string `"hello {{key}}"` we will have `key`
     /// as a named placeholder.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use text_placeholder::Template;
+    /// let template = Template::new("Hello {{key}}!");
+    /// ```
     pub fn new(text: &'t str) -> Self {
         Self {
             tokens: TokenIterator::new(text, DEFAULT_START_PLACEHOLDER, DEFAULT_END_PLACEHOLDER)
@@ -64,9 +70,13 @@ impl<'t> Template<'t> {
     }
 
     /// Generates a Template with boundaries specified by the `start` and `end`
-    /// arguments. Example:
+    /// arguments.
     ///
-    /// Template::new_with_placeholder("Hello [key]!", "[", "]");
+    /// Example:
+    /// ```rust
+    /// # use text_placeholder::Template;
+    /// let template = Template::new_with_placeholder("Hello [key]!", "[", "]");
+    /// ```
     pub fn new_with_placeholder(text: &'t str, start: &'t str, end: &'t str) -> Self {
         Self {
             tokens: TokenIterator::new(text, start, end).collect(),
@@ -79,7 +89,7 @@ impl<'t> Template<'t> {
     /// Placeholders without an associated value will be replaced with an empty string.
     ///
     /// For a version that generates an error in case a placeholder is missing see
-    /// `fill_with_hashmap_strict`.
+    /// [`Template::fill_with_hashmap_strict`].
     pub fn fill_with_hashmap(&self, replacements: &HashMap<&str, &str>) -> String {
         self.fill_with_function(|s| Some(Cow::Borrowed(replacements.get(s).unwrap_or(&""))))
             .unwrap()
@@ -91,16 +101,46 @@ impl<'t> Template<'t> {
     /// Placeholders without an associated value will result in a `Error::PlaceholderError`.
     ///
     /// For a version that does not generate an error in case a placeholder is missing see
-    /// `fill_with_hashmap`.
+    /// [`Template::fill_with_hashmap`].
     pub fn fill_with_hashmap_strict(&self, replacements: &HashMap<&str, &str>) -> Result<String> {
         self.fill_with_function(|s| replacements.get(s).map(|s| Cow::from(*s)))
     }
 
-    /// Fill the template's placeholders using the provided `replacements` function
-    /// in order to to derive values for the named placeholders.
+    /// Fill the template's placeholders using the provided `replacements`
+    /// function in order to to derive values for the named placeholders.
+    /// 
+    /// `replacements` is a [`FnMut`] which may modify its environment. The
+    /// `key` parameter is borrowed from `Template`, and so can be stored in the
+    /// enclosing scope.
+    /// 
+    /// Returned [`Cow<str>`] may also be borrwed from the `key`, the
+    /// environment, or be an owned [`String`] that's computed from the key or
+    /// derived in some other way.
     ///
     /// Placeholders without an associated value (the function returns `None`)
     /// will result in a `Error::PlaceholderError`.
+    ///
+    /// This is the most general form of replacement; the other `fill_with_`
+    /// methods are implemented in terms of this method.
+    ///
+    /// Example:
+    /// ```rust
+    /// # use text_placeholder::Template;
+    /// # use std::borrow::Cow;
+    /// let template = Template::new("Hello {{first}} {{second}}!");
+    ///
+    /// let mut idx = 0;
+    /// assert_eq!(
+    ///     &*template.fill_with_function(
+    ///     |key| {
+    ///       idx += 1;
+    ///       Some(Cow::Owned(format!("{key}-{idx}")))
+    ///     })
+    ///     .unwrap(),
+    ///     "Hello first-1 second-2!"
+    /// );
+    /// assert_eq!(idx, 2);
+    /// ```
     pub fn fill_with_function<'a, F>(&self, mut replacements: F) -> Result<String>
     where
         F: FnMut(&'t str) -> Option<Cow<'a, str>> + 'a,
@@ -113,7 +153,7 @@ impl<'t> Template<'t> {
                 Token::Placeholder(s) => match replacements(s) {
                     Some(value) => result.push_str(&*value),
                     None => {
-                        let message = format!("missing value for placeholder named '{}'.", s);
+                        let message = format!("missing value for placeholder named '{s}'.");
                         return Err(Error::PlaceholderError(message));
                     }
                 },
@@ -125,22 +165,29 @@ impl<'t> Template<'t> {
 
     #[cfg(feature = "struct_context")]
     /// Fill the template's placeholders using the provided `replacements struct`
-    /// in order to to infer values for the named placeholders. The provided struct
+    /// in order to to derive values for the named placeholders. The provided struct
     /// must implement `serde::Serialize`.
     ///
     /// Placeholders without an associated value or with values that cannot be converted
     /// to an str will be replaced with an empty string.
     ///
     /// For a version that generates an error in case a placeholder is missing see
-    /// `fill_with_struct_strict`.
+    /// [`Template::fill_with_struct_strict`].
     pub fn fill_with_struct<R>(&self, replacements: &R) -> Result<String>
     where
         R: Serialize,
     {
-        let mut result = String::new();
         let replacements = serde_json::to_value(replacements)?;
 
-        self.fill_with_function(|s| Some(Cow::Borrowed(replacements.get(s).unwrap_or("")))).unwrap()
+        let result = self
+            .fill_with_function(|s| {
+                Some(Cow::Borrowed(
+                    replacements.get(s).and_then(|v| v.as_str()).unwrap_or(""),
+                ))
+            })
+            .unwrap();
+
+        Ok(result)
     }
 
     #[cfg(feature = "struct_context")]
@@ -152,15 +199,18 @@ impl<'t> Template<'t> {
     /// to an str will result in a `Error::PlaceholderError`.
     ///
     /// For a version that does not generate an error in case a placeholder is missing see
-    /// `fill_with_struct`.
+    /// [`Template::fill_with_struct`].
     pub fn fill_with_struct_strict<R>(&self, replacements: &R) -> Result<String>
     where
         R: Serialize,
     {
-        let mut result = String::new();
         let replacements = serde_json::to_value(replacements)?;
 
-        self.fill_with_function(|s| replacements.get(s).map(|v| Cow::Borrowed(v)))
+        self.fill_with_function(|s| {
+            replacements
+                .get(s)
+                .and_then(|v| v.as_str().map(Cow::Borrowed))
+        })
     }
 }
 
@@ -381,11 +431,13 @@ mod tests {
         let mut kw = Vec::new();
         let mut idx = 0;
 
-        let result = template.fill_with_function(|s| {
-            kw.push(s);
-            idx += 1;
-            Some(Cow::Owned(format!("{s}{idx}")))
-        }).expect("fill_with_function failed");
+        let result = template
+            .fill_with_function(|s| {
+                kw.push(s);
+                idx += 1;
+                Some(Cow::Owned(format!("{s}{idx}")))
+            })
+            .expect("fill_with_function failed");
 
         assert_eq!(result, "hello foo1 bar2");
         assert_eq!(kw, vec!["foo", "bar"]);
