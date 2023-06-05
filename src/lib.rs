@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! # A minimal text template engine
 //!
 //! ## Overview
@@ -12,7 +13,11 @@
 //! ## Example
 //!
 //!     use text_placeholder::Template;
+//!     #[cfg(feature = "std")]
 //!     use std::collections::HashMap;
+//!
+//!     #[cfg(not(feature = "std"))]
+//!     use hashbrown::HashMap;
 //!
 //!     let default_template = Template::new("Hello {{first}} {{second}}!");
 //!
@@ -28,7 +33,7 @@
 //!
 //!     assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!");
 
-use std::borrow::Cow;
+use alloc::borrow::Cow;
 
 mod token_iterator;
 use token_iterator::{Token, TokenIterator};
@@ -41,7 +46,16 @@ extern crate serde_json;
 #[cfg(feature = "struct_context")]
 use serde::Serialize;
 
+#[cfg(feature = "std")]
 use std::collections::HashMap;
+
+#[cfg(not(feature = "std"))]
+use hashbrown::HashMap;
+
+#[macro_use]
+extern crate alloc;
+
+use alloc::{string::String, vec::Vec};
 
 const DEFAULT_START_PLACEHOLDER: &str = "{{";
 const DEFAULT_END_PLACEHOLDER: &str = "}}";
@@ -108,11 +122,11 @@ impl<'t> Template<'t> {
 
     /// Fill the template's placeholders using the provided `replacements`
     /// function in order to to derive values for the named placeholders.
-    /// 
+    ///
     /// `replacements` is a [`FnMut`] which may modify its environment. The
     /// `key` parameter is borrowed from `Template`, and so can be stored in the
     /// enclosing scope.
-    /// 
+    ///
     /// Returned [`Cow<str>`] may also be borrwed from the `key`, the
     /// environment, or be an owned [`String`] that's computed from the key or
     /// derived in some other way.
@@ -151,7 +165,7 @@ impl<'t> Template<'t> {
             match segment {
                 Token::Text(s) => result.push_str(s),
                 Token::Placeholder(s) => match replacements(s) {
-                    Some(value) => result.push_str(&*value),
+                    Some(value) => result.push_str(&value),
                     None => {
                         let message = format!("missing value for placeholder named '{s}'.");
                         return Err(Error::PlaceholderError(message));
@@ -216,9 +230,19 @@ impl<'t> Template<'t> {
 
 #[cfg(test)]
 mod tests {
-    use super::Template;
-    use std::borrow::Cow;
+    use alloc::{
+        borrow::{Cow, ToOwned},
+        string::ToString,
+        vec::Vec,
+    };
+
+    #[cfg(feature = "std")]
     use std::collections::HashMap;
+
+    use super::Template;
+
+    #[cfg(not(feature = "std"))]
+    use hashbrown::HashMap;
 
     #[cfg(feature = "struct_context")]
     use serde::Serialize;

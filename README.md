@@ -1,11 +1,20 @@
 # Text Placeholder
 
-A minimal text template engine that allows named placeholders within your templates.
+Text Placeholder is a minimalistic text template engine designed for the manipulation of named
+placeholders within textual templates.
 
-There are two necessary pieces in order to parse a template:
+This library operates based on two primary elements:
 
-- Placeholders
-- Context
+- **Placeholders**: Defined markers within the text templates intended to be replaced by actual
+  content in the final rendition.
+
+- **Context**: The precise data set used for the replacement of placeholders during the template
+  rendering process.
+
+For use within a [`no_std` environment](https://docs.rust-embedded.org/book/intro/no-std.html), Text
+Placeholder can be configured by disabling
+[the default features](https://doc.rust-lang.org/cargo/reference/features.html#the-default-feature).
+This allows the library to maintain compatibility with `no_std` specifications.
 
 ## Placeholders
 
@@ -51,7 +60,7 @@ The following methods are available with a `HashMap`:
 
 ```rust
 use text_placeholder::Template;
-use std::collections::HashMap;
+use std::collections::HashMap; // or for no_std `use hashbrown::HashMap;`
 
 let default_template = Template::new("Hello {{first}} {{second}}!");
 
@@ -70,20 +79,19 @@ assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!"
 
 ### Function
 
-This uses a function to generate the substitution value. The value could be
-extracted from a HashMap or BTreeMap, read from a config file or database, or
-purely computed from the key itself.
+This uses a function to generate the substitution value. The value could be extracted from a HashMap
+or BTreeMap, read from a config file or database, or purely computed from the key itself.
 
-The function takes a `key` and returns an `Option<Cow<str>>` - that is it can
-return a borrowed `&str`, an owned `String` or no value. Returning no value
-causes `fill_with_function` to fail (it's the equivalent of
-`fill_with_hashmap_strict` in this way).
+The function takes a `key` and returns an `Option<Cow<str>>` - that is it can return a borrowed
+`&str`, an owned `String` or no value. Returning no value causes `fill_with_function` to fail (it's
+the equivalent of `fill_with_hashmap_strict` in this way).
 
-The function actually a `FnMut` closure, so it can also modify external state,
-such as keeping track of which `key` values were used. `key` has a lifetime
-borrowed from the template, so it can be stored outside of the closure.
+The function actually a `FnMut` closure, so it can also modify external state, such as keeping track
+of which `key` values were used. `key` has a lifetime borrowed from the template, so it can be
+stored outside of the closure.
 
 #### Example
+
 ```rust
 use text_placeholder::Template;
 use std::borrow::Cow;
@@ -107,14 +115,16 @@ assert_eq!(idx, 2);
 
 Allow structs that implement the `serde::Serialize` trait to be used as context.
 
-This is an optional feature that depends on `serde`. In order to enable it add the following to your `Cargo.toml` file:
+This is an optional feature that depends on `serde`. In order to enable it add the following to your
+`Cargo.toml` file:
 
 ```toml
 [dependencies]
 text_placeholder = { version = "0.4", features = ["struct_context"] }
 ```
 
-Each placeholder should be a `field` in your `struct` with an associated `value` that can be converted into a `str`.
+Each placeholder should be a `field` in your `struct` with an associated `value` that can be
+converted into a `str`.
 
 The following methods are available with a `struct`:
 
