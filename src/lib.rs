@@ -108,11 +108,11 @@ impl<'t> Template<'t> {
 
     /// Fill the template's placeholders using the provided `replacements`
     /// function in order to to derive values for the named placeholders.
-    /// 
+    ///
     /// `replacements` is a [`FnMut`] which may modify its environment. The
     /// `key` parameter is borrowed from `Template`, and so can be stored in the
     /// enclosing scope.
-    /// 
+    ///
     /// Returned [`Cow<str>`] may also be borrwed from the `key`, the
     /// environment, or be an owned [`String`] that's computed from the key or
     /// derived in some other way.
@@ -151,7 +151,7 @@ impl<'t> Template<'t> {
             match segment {
                 Token::Text(s) => result.push_str(s),
                 Token::Placeholder(s) => match replacements(s) {
-                    Some(value) => result.push_str(&*value),
+                    Some(value) => result.push_str(&value),
                     None => {
                         let message = format!("missing value for placeholder named '{s}'.");
                         return Err(Error::PlaceholderError(message));
