@@ -165,7 +165,7 @@ impl<'t> Template<'t> {
             match segment {
                 Token::Text(s) => result.push_str(s),
                 Token::Placeholder(s) => match replacements(s) {
-                    Some(value) => result.push_str(&*value),
+                    Some(value) => result.push_str(&value),
                     None => {
                         let message = format!("missing value for placeholder named '{s}'.");
                         return Err(Error::PlaceholderError(message));

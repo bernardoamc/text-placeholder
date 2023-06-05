@@ -47,9 +47,9 @@ impl<'t> TokenIterator<'t> {
 
         if let Some(placeholder_index) = self.text.find(self.end) {
             token = Token::Placeholder(
-                &self.text[self.start.len()..placeholder_index]
-                    .trim_start_matches(" ")
-                    .trim_end_matches(" "),
+                self.text[self.start.len()..placeholder_index]
+                    .trim_start_matches(' ')
+                    .trim_end_matches(' '),
             );
             let new_position = placeholder_index + self.end.len();
             self.text = &self.text[new_position..];
@@ -66,7 +66,7 @@ impl<'t> Iterator for TokenIterator<'t> {
     type Item = Token<'t>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.text.len() == 0 {
+        if self.text.is_empty() {
             return None;
         }
 
