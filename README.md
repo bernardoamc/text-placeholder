@@ -79,20 +79,19 @@ assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!"
 
 ### Function
 
-This uses a function to generate the substitution value. The value could be
-extracted from a HashMap or BTreeMap, read from a config file or database, or
-purely computed from the key itself.
+This uses a function to generate the substitution value. The value could be extracted from a HashMap
+or BTreeMap, read from a config file or database, or purely computed from the key itself.
 
-The function takes a `key` and returns an `Option<Cow<str>>` - that is it can
-return a borrowed `&str`, an owned `String` or no value. Returning no value
-causes `fill_with_function` to fail (it's the equivalent of
-`fill_with_hashmap_strict` in this way).
+The function takes a `key` and returns an `Option<Cow<str>>` - that is it can return a borrowed
+`&str`, an owned `String` or no value. Returning no value causes `fill_with_function` to fail (it's
+the equivalent of `fill_with_hashmap_strict` in this way).
 
-The function actually a `FnMut` closure, so it can also modify external state,
-such as keeping track of which `key` values were used. `key` has a lifetime
-borrowed from the template, so it can be stored outside of the closure.
+The function actually a `FnMut` closure, so it can also modify external state, such as keeping track
+of which `key` values were used. `key` has a lifetime borrowed from the template, so it can be
+stored outside of the closure.
 
 #### Example
+
 ```rust
 use text_placeholder::Template;
 use std::borrow::Cow;
