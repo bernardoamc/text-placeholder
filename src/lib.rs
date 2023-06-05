@@ -33,7 +33,7 @@
 //!
 //!     assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!");
 
-use std::borrow::Cow;
+use alloc::borrow::Cow;
 
 mod token_iterator;
 use token_iterator::{Token, TokenIterator};
@@ -122,11 +122,11 @@ impl<'t> Template<'t> {
 
     /// Fill the template's placeholders using the provided `replacements`
     /// function in order to to derive values for the named placeholders.
-    /// 
+    ///
     /// `replacements` is a [`FnMut`] which may modify its environment. The
     /// `key` parameter is borrowed from `Template`, and so can be stored in the
     /// enclosing scope.
-    /// 
+    ///
     /// Returned [`Cow<str>`] may also be borrwed from the `key`, the
     /// environment, or be an owned [`String`] that's computed from the key or
     /// derived in some other way.
@@ -230,9 +230,16 @@ impl<'t> Template<'t> {
 
 #[cfg(test)]
 mod tests {
-    use super::Template;
-    use std::borrow::Cow;
+    use alloc::{
+        borrow::{Cow, ToOwned},
+        string::ToString,
+        vec::Vec,
+    };
+
+    #[cfg(feature = "std")]
     use std::collections::HashMap;
+
+    use super::Template;
 
     #[cfg(not(feature = "std"))]
     use hashbrown::HashMap;
