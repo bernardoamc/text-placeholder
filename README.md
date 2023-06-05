@@ -37,9 +37,10 @@ let template = Template::new_with_placeholder("Hello $[first] $[second]!", "$[",
 Context is the data structure that will be used to replace your placeholders with real data.
 
 You can think of your placeholder as a key within a `HashMap` or the name of a field within a
-`struct`. In fact, these are the two types of context supported by this library:
+`struct`. In fact, these are the three types of context supported by this library:
 
 - HashMap.
+- A function
 - Struct, as an **optional** feature.
 
 ### HashMap
@@ -74,6 +75,41 @@ assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!"
 let custom_template = Template::new_with_placeholder("Hello $[first]] $[second]!", "$[", "]");
 
 assert_eq!(default_template.fill_with_hashmap(&table), "Hello text placeholder!");
+```
+
+### Function
+
+This uses a function to generate the substitution value. The value could be
+extracted from a HashMap or BTreeMap, read from a config file or database, or
+purely computed from the key itself.
+
+The function takes a `key` and returns an `Option<Cow<str>>` - that is it can
+return a borrowed `&str`, an owned `String` or no value. Returning no value
+causes `fill_with_function` to fail (it's the equivalent of
+`fill_with_hashmap_strict` in this way).
+
+The function actually a `FnMut` closure, so it can also modify external state,
+such as keeping track of which `key` values were used. `key` has a lifetime
+borrowed from the template, so it can be stored outside of the closure.
+
+#### Example
+```rust
+use text_placeholder::Template;
+use std::borrow::Cow;
+
+let template = Template::new("Hello {{first}} {{second}}!");
+
+let mut idx = 0;
+assert_eq!(
+    &*template.fill_with_function(
+    |key| {
+      idx += 1;
+      Some(Cow::Owned(format!("{key}-{idx}")))
+    })
+    .unwrap(),
+    "Hello first-1 second-2!"
+);
+assert_eq!(idx, 2);
 ```
 
 ### Struct
