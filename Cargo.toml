@@ -1,11 +1,11 @@
 [package]
 name = "text_placeholder"
 description = "A flexible text template engine"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Bernardo Araujo <bernardo.amc@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/bernardoamc/text-placeholder"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 readme = "README.md"
 
 [features]
